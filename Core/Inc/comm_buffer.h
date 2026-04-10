@@ -5,8 +5,8 @@
  *      Author: d.pons
  */
 
-#ifndef INC_COMM_BUFFER_H_
-#define INC_COMM_BUFFER_H_
+#ifndef __COMM_BUFFER_H
+#define __COMM_BUFFER_H
 
 #include "can_frame.h"
 

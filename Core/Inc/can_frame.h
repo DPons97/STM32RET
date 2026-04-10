@@ -5,10 +5,10 @@
  *      Author: d.pons
  */
 
-#ifndef SRC_CAN_FRAME_H_
-#define SRC_CAN_FRAME_H_
+#ifndef __CAN_FRAME_H
+#define __CAN_FRAME_H
 
-#include "stm32f4xx_hal_can.h"
+#include "stm32f4xx_hal.h"
 
 typedef struct {
 	/**
@@ -30,7 +30,7 @@ typedef struct {
 	uint8_t Data[8];
 } CAN_RxFrameTypeDef;
 
-CAN_RxFrameTypeDef CAN_RxFrame_Default;
+extern CAN_RxFrameTypeDef CAN_RxFrame_Default;
 
 typedef struct {
 	/**
@@ -53,7 +53,7 @@ typedef struct {
 	uint8_t Data[8];
 } CAN_TxFrameTypeDef;
 
-CAN_TxFrameTypeDef CAN_TxFrame_Default;
+extern CAN_TxFrameTypeDef CAN_TxFrame_Default;
 
 
 #endif /* SRC_CAN_FRAME_H_ */

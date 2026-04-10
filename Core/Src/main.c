@@ -210,7 +210,7 @@ static void MX_CAN1_Init(void)
 {
 
   /* USER CODE BEGIN CAN1_Init 0 */
-  Settings_Init_CAN1_Reference(&hcan);
+  Settings_Init_CAN1_Reference(&hcan1);
   Settings_Init_CAN2_Reference(NULL);
   /* USER CODE END CAN1_Init 0 */
 

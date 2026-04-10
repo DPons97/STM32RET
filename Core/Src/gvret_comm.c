@@ -13,8 +13,6 @@
 #include "can_frame.h"
 #include "settings.h"
 
-#include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_can.h"
 
 // FSM
 GVRET_State State = IDLE;

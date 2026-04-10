@@ -1,12 +1,12 @@
 /* Define to prevent recursive inclusion -------------------------------------*/
 
-#ifndef __GVRET_COMM_H__
-#define __GVRET_COMM_H__
+#ifndef __GVRET_COMM_H
+#define __GVRET_COMM_H
 
 /* Includes ------------------------------------------------------------------*/
 #include "comm_buffer.h"
 
-#include "stm32f4xx_hal_can.h"
+#include "stm32f4xx_hal.h"
 
 typedef enum {
     IDLE,

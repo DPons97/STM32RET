@@ -11,7 +11,7 @@
 #include "settings.h"
 #include "gvret_comm.h"
 
-#include "stm32f4xx_hal_can.h"
+#include "stm32f4xx_hal.h"
 
 void CAN_Setup_Settings() {
 	uint32_t can_freq = HAL_RCC_GetPCLK1Freq() / Settings_CAN_Handles[0]->Init.Prescaler;	    	// CAN frequency from peripheral APB1 clock and prescaler

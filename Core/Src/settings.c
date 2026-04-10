@@ -7,9 +7,11 @@
 
 #include "settings.h"
 
-#include "stm32f407xx.h"
+#include "stm32f4xx_hal.h"
 
-#include "stm32f4xx_hal_can.h"
+CAN_HandleTypeDef* Settings_CAN_Handles[NUM_CAN_BUSES] = {NULL, NULL};
+
+Settings_CANTypeDef Settings_CAN[NUM_CAN_BUSES] = {Settings_CAN_Default, Settings_CAN_Default};
 
 void Settings_Init_CAN1_Reference(CAN_HandleTypeDef* hcan) {
 	Settings_CAN_Handles[0] = hcan;

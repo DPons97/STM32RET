@@ -5,10 +5,10 @@
  *      Author: d.pons
  */
 
-#ifndef INC_SETTINGS_H_
-#define INC_SETTINGS_H_
+#ifndef __SETTINGS_H
+#define __SETTINGS_H
 
-#include "stm32f4xx_hal_can.h"
+#include "stm32f4xx_hal.h"
 
 #define TIME_QUANTA 16
 #define NUM_CAN_BUSES 2
@@ -16,7 +16,7 @@
 #define CFG_BUILD_NUM 100	// v1.0
 
 // CAN buses
-CAN_HandleTypeDef* Settings_CAN_Handles[NUM_CAN_BUSES] = {NULL, NULL};
+extern CAN_HandleTypeDef* Settings_CAN_Handles[NUM_CAN_BUSES];
 
 // CAN settings
 typedef struct {
@@ -27,9 +27,9 @@ typedef struct {
     uint8_t FdMode;
 } Settings_CANTypeDef;
 
-const Settings_CANTypeDef Settings_CAN_Default = {0, 0, 0, 0, 0};
+static const Settings_CANTypeDef Settings_CAN_Default = {0, 0, 0, 0, 0};
 
-Settings_CANTypeDef Settings_CAN[NUM_CAN_BUSES] = {Settings_CAN_Default, Settings_CAN_Default};
+extern Settings_CANTypeDef Settings_CAN[NUM_CAN_BUSES];
 
 void Settings_Init_CAN1_Reference(CAN_HandleTypeDef* hcan);
 void Settings_Init_CAN2_Reference(CAN_HandleTypeDef* hcan);
