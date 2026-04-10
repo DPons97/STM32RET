@@ -13,6 +13,11 @@
 
 #include "stm32f4xx_hal.h"
 
+// Copied from main.h
+// Remember to change these if changing the originals
+#define LD3_GPIO_Port GPIOD
+#define LD3_Pin GPIO_PIN_13
+
 void CAN_Setup_Settings() {
 	uint32_t can_freq = HAL_RCC_GetPCLK1Freq() / Settings_CAN_Handles[0]->Init.Prescaler;	    	// CAN frequency from peripheral APB1 clock and prescaler
 	uint32_t can_baudrate = can_freq / TIME_QUANTA;
@@ -47,6 +52,8 @@ void CAN_Loop() {
     	Settings_CANTypeDef* settings = &Settings_CAN[0];
     	if (settings && settings->Enabled != 0) {
     		while (HAL_CAN_GetRxFifoFillLevel(Settings_CAN_Handles[0], CAN_RX_FIFO0) > 0 && serial_length < COMM_BUFF_SIZE - BUFF_SIZE_THRESHOLD) {
+    			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+
     			if (settings->FdMode == 0) {
     				// Receive new frame
     				HAL_CAN_GetRxMessage(Settings_CAN_Handles[0], CAN_RX_FIFO0, &can_frame.Header, can_frame.Data);
@@ -57,26 +64,32 @@ void CAN_Loop() {
 
     			// Update serial buffer length
     			serial_length = COMM_Get_Available_Bytes(GVRET_Get_Serial_Buffer());
+
+    			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
     		}
     	}
     }
 
     // Read CAN2
     if (Settings_CAN_Handles[1] != NULL) {
-        	Settings_CANTypeDef* settings = &Settings_CAN[1];
-        	if (settings && settings->Enabled != 0) {
-        		while (HAL_CAN_GetRxFifoFillLevel(Settings_CAN_Handles[1], CAN_RX_FIFO1) > 0 && serial_length < COMM_BUFF_SIZE - BUFF_SIZE_THRESHOLD) {
-        			if (settings->FdMode == 0) {
-        				// Receive new frame
-        				HAL_CAN_GetRxMessage(Settings_CAN_Handles[1], CAN_RX_FIFO1, &can_frame.Header, can_frame.Data);
+		Settings_CANTypeDef* settings = &Settings_CAN[1];
+		if (settings && settings->Enabled != 0) {
+			while (HAL_CAN_GetRxFifoFillLevel(Settings_CAN_Handles[1], CAN_RX_FIFO1) > 0 && serial_length < COMM_BUFF_SIZE - BUFF_SIZE_THRESHOLD) {
+				HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
 
-    					// Send to buffer
-        				CAN_DisplayFrame(&can_frame, 1);
-        			}
-        		}
+				if (settings->FdMode == 0) {
+					// Receive new frame
+					HAL_CAN_GetRxMessage(Settings_CAN_Handles[1], CAN_RX_FIFO1, &can_frame.Header, can_frame.Data);
 
-        		// Update serial buffer length
-        		serial_length = COMM_Get_Available_Bytes(GVRET_Get_Serial_Buffer());
-        	}
-        }
+					// Send to buffer
+					CAN_DisplayFrame(&can_frame, 1);
+				}
+
+				// Update serial buffer length
+				serial_length = COMM_Get_Available_Bytes(GVRET_Get_Serial_Buffer());
+
+				HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+			}
+		}
+	}
 }

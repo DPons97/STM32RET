@@ -53,6 +53,8 @@
 #define APP_TX_DATA_SIZE  2048
 /* USER CODE BEGIN EXPORTED_DEFINES */
 
+#define USB_BUFF_SIZE 128
+
 /* USER CODE END EXPORTED_DEFINES */
 
 /**
@@ -65,6 +67,11 @@
   */
 
 /* USER CODE BEGIN EXPORTED_TYPES */
+typedef struct {
+	uint8_t Buffer[USB_BUFF_SIZE];
+
+	uint32_t Len;
+} USB_Msg_Buffer;
 
 /* USER CODE END EXPORTED_TYPES */
 
@@ -110,7 +117,7 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 
-uint8_t* Pop_USB_Msg();
+USB_Msg_Buffer* Pop_USB_Msg();
 uint8_t Push_USB_Msg(uint8_t* Msg, uint16_t Len);
 
 /* USER CODE END EXPORTED_FUNCTIONS */

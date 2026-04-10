@@ -63,7 +63,6 @@
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
 
-#define BUFFER_SIZE 64
 #define QUEUE_SIZE 16
 
 /* USER CODE END PRIVATE_DEFINES */
@@ -98,12 +97,7 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-
-typedef struct {
-	uint8_t Buffer[BUFFER_SIZE];
-} USB_BuffQ_Elem;
-
-USB_BuffQ_Elem Queue[QUEUE_SIZE];
+USB_Msg_Buffer Queue[QUEUE_SIZE];
 uint8_t Queue_Head = 0;
 uint8_t Queue_Tail = 0;
 uint8_t Queue_Count = 0;
@@ -275,10 +269,10 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
+  Push_USB_Msg(Buf, *Len);
+
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-
-  Push_USB_Msg(Buf, Len);
 
   return (USBD_OK);
   /* USER CODE END 6 */
@@ -334,12 +328,12 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
-uint8_t* Pop_USB_Msg() {
+USB_Msg_Buffer* Pop_USB_Msg() {
 	if (Queue_Count == 0) {
 		return NULL;
 	}
 
-	uint8_t* elem = Queue[Queue_Head].Buffer;
+	USB_Msg_Buffer* elem = &Queue[Queue_Head];
 	Queue_Head = (Queue_Head + 1) % QUEUE_SIZE;
 	Queue_Count--;
 	return elem;
@@ -350,8 +344,10 @@ uint8_t Push_USB_Msg(uint8_t* Msg, uint16_t Len) {
 		return 0;
 	}
 
-	memset(Queue[Queue_Tail].Buffer, '\0', BUFFER_SIZE);
+	memset(Queue[Queue_Tail].Buffer, '\0', USB_BUFF_SIZE);
 	memcpy(Queue[Queue_Tail].Buffer, Msg, Len);
+	Queue[Queue_Tail].Len = Len;
+
 	Queue_Tail = (Queue_Tail + 1) % QUEUE_SIZE;
 	Queue_Count++;
 

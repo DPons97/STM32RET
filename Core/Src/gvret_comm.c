@@ -69,7 +69,6 @@ void GVRET_Process_Incoming_Byte(uint8_t byte) {
 		case PROTO_TIME_SYNC:
 			State = TIME_SYNC;
 			Step = 0;
-			COMM_Buffer_Clear(&GVRET_Serial_Buffer);
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 0xF1;
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 1; //time sync
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = (uint8_t) (now & 0xFF);
@@ -80,7 +79,6 @@ void GVRET_Process_Incoming_Byte(uint8_t byte) {
 		case PROTO_DIG_INPUTS:
 			//immediately return the data for digital inputs
 			temp8 = 0; //getDigital(0) + (getDigital(1) << 1) + (getDigital(2) << 2) + (getDigital(3) << 3) + (getDigital(4) << 4) + (getDigital(5) << 5);
-			COMM_Buffer_Clear(&GVRET_Serial_Buffer);
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 0xF1;
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 2; //digital inputs
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = temp8;
@@ -91,7 +89,6 @@ void GVRET_Process_Incoming_Byte(uint8_t byte) {
 		case PROTO_ANA_INPUTS:
 			//immediately return data on analog inputs
 			temp16 = 0;// getAnalog(0);  // Analogue input 1
-			COMM_Buffer_Clear(&GVRET_Serial_Buffer);
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 0xF1;
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 3;
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = temp16 & 0xFF;
@@ -130,7 +127,6 @@ void GVRET_Process_Incoming_Byte(uint8_t byte) {
 			break;
 		case PROTO_GET_CANBUS_PARAMS:
 			//immediately return data on canbus params
-			COMM_Buffer_Clear(&GVRET_Serial_Buffer);
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 0xF1;
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 6;
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = Settings_CAN[0].Enabled + ((unsigned char) Settings_CAN[0].ListenOnly << 4);
@@ -147,7 +143,6 @@ void GVRET_Process_Incoming_Byte(uint8_t byte) {
 			break;
 		case PROTO_GET_DEV_INFO:
 			//immediately return device information
-			COMM_Buffer_Clear(&GVRET_Serial_Buffer);
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 0xF1;
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 7;
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = CFG_BUILD_NUM & 0xFF;
@@ -164,7 +159,6 @@ void GVRET_Process_Incoming_Byte(uint8_t byte) {
 			Step = 0;
 			break;
 		case PROTO_KEEPALIVE:
-			COMM_Buffer_Clear(&GVRET_Serial_Buffer);
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 0xF1;
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 0x09;
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 0xDE;
@@ -183,7 +177,6 @@ void GVRET_Process_Incoming_Byte(uint8_t byte) {
 			Build_Out_RxFrame = CAN_RxFrame_Default;
 			break;
 		case PROTO_GET_NUMBUSES:
-			COMM_Buffer_Clear(&GVRET_Serial_Buffer);
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 0xF1;
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 12;
 
@@ -192,7 +185,6 @@ void GVRET_Process_Incoming_Byte(uint8_t byte) {
 			State = IDLE;
 			break;
 		case PROTO_GET_EXT_BUSES:
-			COMM_Buffer_Clear(&GVRET_Serial_Buffer);
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++]  = 0xF1;
 			GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++]  = 13;
 			for (int u = 2; u < 17; u++) GVRET_Serial_Buffer.COMM_Buffer[GVRET_Serial_Buffer.COMM_Buffer_Len++] = 0;

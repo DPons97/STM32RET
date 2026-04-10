@@ -43,7 +43,7 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define SER_BUFF_FLUSH_INTERVAL 20
+#define SER_BUFF_FLUSH_INTERVAL 10
 #define SER_RCV_MAX_BATCH 128
 /* USER CODE END PM */
 
@@ -121,9 +121,7 @@ int main(void)
   {
 	// Read CAN buses
 	// Turn on green led while receiving data from usb
-	HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
 	CAN_Loop();
-	HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 
 	COMM_BufferTypeDef* gvret_buffer = GVRET_Get_Serial_Buffer();
 	uint32_t serial_length = COMM_Get_Available_Bytes(gvret_buffer);
@@ -137,14 +135,11 @@ int main(void)
 	 COMM_Buffer_Clear(gvret_buffer);
 	}
 
-	uint8_t serialCount = 0;
-	uint8_t* buff = Pop_USB_Msg();
-	while (buff != NULL && serialCount < SER_RCV_MAX_BATCH) {
+	USB_Msg_Buffer* buff = Pop_USB_Msg();
+	for (uint32_t i = 0; buff != NULL && i < buff->Len; i++) {
 	 // Turn on green led while receiving data from usb
 	 HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_SET);
-	 serialCount++;
-	 GVRET_Process_Incoming_Byte(*buff);
-	 buff = Pop_USB_Msg();
+	 GVRET_Process_Incoming_Byte(buff->Buffer[i]);
 	 HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_RESET);
 	}
 
