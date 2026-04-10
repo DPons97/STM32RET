@@ -5,6 +5,7 @@
 # 1. CubeMX project metadata (regenerated anytime with .ioc)
 *.mxproject
 *.mxproject/*
+*.osx.project
 
 # 2. Code generation logs
 *.log
