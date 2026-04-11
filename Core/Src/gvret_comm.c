@@ -61,7 +61,8 @@ void GVRET_Process_Incoming_Byte(uint8_t byte) {
 		switch(byte)
 		{
 		case PROTO_BUILD_CAN_FRAME:
-			State = BUILD_CAN_FRAME;
+			State = BUILD_CAN_FRAME;		// Comment this to echo received can frames
+			// State = ECHO_CAN_FRAME;		// Uncomment this to echo received can frames
 			Buff[0] = 0xF1;
 			Step = 0;
 			Build_Out_TxFrame = CAN_TxFrame_Default;
