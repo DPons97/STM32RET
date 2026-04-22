@@ -49,6 +49,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan1;
+CAN_HandleTypeDef hcan2;
 
 I2C_HandleTypeDef hi2c1;
 
@@ -68,6 +69,7 @@ static void MX_I2C1_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_CAN1_Init(void);
+static void MX_CAN2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -111,7 +113,10 @@ int main(void)
   MX_SPI1_Init();
   MX_CAN1_Init();
   MX_USB_DEVICE_Init();
+  MX_CAN2_Init();
   /* USER CODE BEGIN 2 */
+
+
 
   /* USER CODE END 2 */
 
@@ -120,27 +125,34 @@ int main(void)
   while (1)
   {
 	// Read CAN buses
-	// Turn on green led while receiving data from usb
-	CAN_Loop();
-
 	COMM_BufferTypeDef* gvret_buffer = GVRET_Get_Serial_Buffer();
 	uint32_t serial_length = COMM_Get_Available_Bytes(gvret_buffer);
 
 	// If the max time has passed or the buffer is almost filled then send buffered data out
 	if (HAL_GetTick() - last_flush > SER_BUFF_FLUSH_INTERVAL || serial_length > COMM_BUFF_SIZE - BUFF_SIZE_THRESHOLD) {
-	 last_flush = HAL_GetTick();
+		last_flush = HAL_GetTick();
 
-	 // Send the buffer through USB
-	 CDC_Transmit_FS(gvret_buffer->COMM_Buffer, gvret_buffer->COMM_Buffer_Len);
-	 COMM_Buffer_Clear(gvret_buffer);
+		while (serial_length > 0) {
+			// Turn on orange led while processing RX buffer queue
+			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+
+			// Send current buffer through USB
+			CDC_Transmit_FS(gvret_buffer->COMM_Buffer, gvret_buffer->COMM_Buffer_Len);
+			COMM_Buffer_Clear(gvret_buffer);
+
+			CAN_ProcessNextRxBufferBatch();
+			serial_length = COMM_Get_Available_Bytes(gvret_buffer);
+
+			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+		}
 	}
 
 	USB_Msg_Buffer* buff = Pop_USB_Msg();
 	for (uint32_t i = 0; buff != NULL && i < buff->Len; i++) {
-	 // Turn on green led while receiving data from usb
-	 HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_SET);
-	 GVRET_Process_Incoming_Byte(buff->Buffer[i]);
-	 HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_RESET);
+		// Turn on green led while receiving data from usb
+		HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_SET);
+		GVRET_Process_Incoming_Byte(buff->Buffer[i]);
+		HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_RESET);
 	}
 
     /* USER CODE END WHILE */
@@ -173,9 +185,9 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
-  RCC_OscInitStruct.PLL.PLLN = 96;
+  RCC_OscInitStruct.PLL.PLLN = 192;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV6;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
+  RCC_OscInitStruct.PLL.PLLQ = 8;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -187,10 +199,10 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -204,33 +216,133 @@ void SystemClock_Config(void)
 static void MX_CAN1_Init(void)
 {
 
-  /* USER CODE BEGIN CAN1_Init 0 */
-  Settings_Init_CAN1_Reference(&hcan1);
-  Settings_Init_CAN2_Reference(NULL);
-  /* USER CODE END CAN1_Init 0 */
+	/* USER CODE BEGIN CAN1_Init 0 */
+	CAN_FilterTypeDef  sFilterConfig;
+	/* USER CODE END CAN1_Init 0 */
 
-  /* USER CODE BEGIN CAN1_Init 1 */
+	/* USER CODE BEGIN CAN1_Init 1 */
 
-  /* USER CODE END CAN1_Init 1 */
-  hcan1.Instance = CAN1;
-  hcan1.Init.Prescaler = 4;
-  hcan1.Init.Mode = CAN_MODE_NORMAL;
-  hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan1.Init.TimeSeg1 = CAN_BS1_13TQ;
-  hcan1.Init.TimeSeg2 = CAN_BS2_2TQ;
-  hcan1.Init.TimeTriggeredMode = DISABLE;
-  hcan1.Init.AutoBusOff = DISABLE;
-  hcan1.Init.AutoWakeUp = DISABLE;
-  hcan1.Init.AutoRetransmission = DISABLE;
-  hcan1.Init.ReceiveFifoLocked = DISABLE;
-  hcan1.Init.TransmitFifoPriority = DISABLE;
-  if (HAL_CAN_Init(&hcan1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN CAN1_Init 2 */
-  CAN_Setup_Settings();
-  /* USER CODE END CAN1_Init 2 */
+	/* USER CODE END CAN1_Init 1 */
+	hcan1.Instance = CAN1;
+	hcan1.Init.Prescaler = 4;
+	hcan1.Init.Mode = CAN_MODE_NORMAL;
+	hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
+	hcan1.Init.TimeSeg1 = CAN_BS1_13TQ;
+	hcan1.Init.TimeSeg2 = CAN_BS2_2TQ;
+	hcan1.Init.TimeTriggeredMode = DISABLE;
+	hcan1.Init.AutoBusOff = DISABLE;
+	hcan1.Init.AutoWakeUp = DISABLE;
+	hcan1.Init.AutoRetransmission = DISABLE;
+	hcan1.Init.ReceiveFifoLocked = DISABLE;
+	hcan1.Init.TransmitFifoPriority = DISABLE;
+	if (HAL_CAN_Init(&hcan1) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN CAN1_Init 2 */
+	/* The CAN filter configuration */
+	sFilterConfig.FilterBank = 0;
+	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+	sFilterConfig.FilterIdHigh = 0x0000;
+	sFilterConfig.FilterIdLow = 0x0000;
+	sFilterConfig.FilterMaskIdHigh = 0x0000;
+	sFilterConfig.FilterMaskIdLow = 0x0000;
+	sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0; /* The data will be received in FIFO0 */
+	sFilterConfig.FilterActivation = ENABLE;
+	sFilterConfig.SlaveStartFilterBank = 14;
+
+	if (HAL_CAN_ConfigFilter(&hcan1, &sFilterConfig) != HAL_OK)
+	{
+		/* Filter configuration Error */
+		Error_Handler();
+	}
+
+	/* Starting the CAN peripheral */
+	if (HAL_CAN_Start(&hcan1) != HAL_OK)
+	{
+		/* Start Error */
+		Error_Handler();
+	}
+
+	/* Activate CAN RX notification on FIFO0 */
+	if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+	{
+		/* Notification Error */
+		Error_Handler();
+	}
+
+	Settings_Init_CAN1(&hcan1);
+	/* USER CODE END CAN1_Init 2 */
+
+}
+
+/**
+  * @brief CAN2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CAN2_Init(void)
+{
+
+	/* USER CODE BEGIN CAN2_Init 0 */
+	CAN_FilterTypeDef  sFilterConfig;
+	/* USER CODE END CAN2_Init 0 */
+
+	/* USER CODE BEGIN CAN2_Init 1 */
+
+	/* USER CODE END CAN2_Init 1 */
+	hcan2.Instance = CAN2;
+	hcan2.Init.Prescaler = 4;
+	hcan2.Init.Mode = CAN_MODE_NORMAL;
+	hcan2.Init.SyncJumpWidth = CAN_SJW_1TQ;
+	hcan2.Init.TimeSeg1 = CAN_BS1_13TQ;
+	hcan2.Init.TimeSeg2 = CAN_BS2_2TQ;
+	hcan2.Init.TimeTriggeredMode = DISABLE;
+	hcan2.Init.AutoBusOff = DISABLE;
+	hcan2.Init.AutoWakeUp = DISABLE;
+	hcan2.Init.AutoRetransmission = DISABLE;
+	hcan2.Init.ReceiveFifoLocked = DISABLE;
+	hcan2.Init.TransmitFifoPriority = DISABLE;
+	if (HAL_CAN_Init(&hcan2) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN CAN2_Init 2 */
+	/* The CAN filter configuration */
+	sFilterConfig.FilterBank = 14;
+	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+	sFilterConfig.FilterIdHigh = 0x0000;
+	sFilterConfig.FilterIdLow = 0x0000;
+	sFilterConfig.FilterMaskIdHigh = 0x0000;
+	sFilterConfig.FilterMaskIdLow = 0x0000;
+	sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0; /* The data will be received in FIFO0 */
+	sFilterConfig.FilterActivation = ENABLE;
+	sFilterConfig.SlaveStartFilterBank = 14;
+
+	if (HAL_CAN_ConfigFilter(&hcan2, &sFilterConfig) != HAL_OK)
+	{
+		/* Filter configuration Error */
+		Error_Handler();
+	}
+
+	/* Starting the CAN peripheral */
+	if (HAL_CAN_Start(&hcan2) != HAL_OK)
+	{
+		/* Start Error */
+		Error_Handler();
+	}
+
+	/* Activate CAN RX notification on FIFO0 */
+	if (HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+	{
+		/* Notification Error */
+		Error_Handler();
+	}
+
+	Settings_Init_CAN2(&hcan2);
+	/* USER CODE END CAN2_Init 2 */
 
 }
 
@@ -288,7 +400,7 @@ static void MX_I2S3_Init(void)
   hi2s3.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
-  hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_96K;
+  hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_32K;
   hi2s3.Init.CPOL = I2S_CPOL_LOW;
   hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
   hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
@@ -439,7 +551,24 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *can_handle)
+{
+	CAN_RxFrameTypeDef can_frame;
 
+	if (HAL_CAN_GetRxMessage(can_handle, CAN_RX_FIFO0, &can_frame.Header, can_frame.Data) != HAL_OK)
+	{
+		/* Reception Error */
+		Error_Handler();
+	}
+
+	if (can_handle == &hcan1) {
+		CAN_DisplayFrame(&can_frame, 0);
+	} else if (can_handle == &hcan2) {
+		CAN_DisplayFrame(&can_frame, 1);
+	} else {
+		Error_Handler();
+	}
+}
 /* USER CODE END 4 */
 
 /**
@@ -453,6 +582,8 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
+	  HAL_GPIO_WritePin(LD5_GPIO_Port, LD5_Pin, GPIO_PIN_SET);
+	  HAL_Delay(1000);
   }
   /* USER CODE END Error_Handler_Debug */
 }

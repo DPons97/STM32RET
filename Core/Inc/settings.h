@@ -31,9 +31,10 @@ static const Settings_CANTypeDef Settings_CAN_Default = {0, 0, 0, 0, 0};
 
 extern Settings_CANTypeDef Settings_CAN[NUM_CAN_BUSES];
 
-void Settings_Init_CAN1_Reference(CAN_HandleTypeDef* hcan);
-void Settings_Init_CAN2_Reference(CAN_HandleTypeDef* hcan);
+void Settings_Init_CAN1(CAN_HandleTypeDef* hcan);
+void Settings_Init_CAN2(CAN_HandleTypeDef* hcan);
 
 void Settings_Set_CAN_Config(CAN_HandleTypeDef* hcan, Settings_CANTypeDef* settings);
+void Settings_Set_CAN_Filtering(CAN_HandleTypeDef* hcan);
 
 #endif /* INC_SETTINGS_H_ */

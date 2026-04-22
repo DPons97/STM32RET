@@ -13,83 +13,49 @@
 
 #include "stm32f4xx_hal.h"
 
-// Copied from main.h
-// Remember to change these if changing the originals
-#define LD3_GPIO_Port GPIOD
-#define LD3_Pin GPIO_PIN_13
+typedef struct {
+	CAN_RxFrameTypeDef RxFrame;
 
-void CAN_Setup_Settings() {
-	uint32_t can_freq = HAL_RCC_GetPCLK1Freq() / Settings_CAN_Handles[0]->Init.Prescaler;	    	// CAN frequency from peripheral APB1 clock and prescaler
-	uint32_t can_baudrate = can_freq / TIME_QUANTA;
+	uint8_t Bus;
+} RxFrameBufferElemTypeDef;
 
-	Settings_CANTypeDef settings;
-	settings.NomSpeed = can_baudrate;
-	settings.FdSpeed = 0;
-	settings.Enabled = 1;
-	settings.ListenOnly = 0;
-	settings.FdMode = 0;
+RxFrameBufferElemTypeDef Rx_FrameBuffer[RX_BUFF_SIZE];
+uint32_t Rx_FrameBufferStart = 0;
+uint32_t Rx_FrameBufferEnd = 0;
 
-	Settings_Set_CAN_Config(Settings_CAN_Handles[0], &settings);
-
-	Settings_CAN[1] = Settings_CAN_Default;
-}
+uint32_t              TxMailbox;  /* The number of the mail box that transmitted the Tx message */
 
 void CAN_DisplayFrame(CAN_RxFrameTypeDef* can_frame, uint8_t which_bus) {
-	COMM_Send_CAN_Frame_To_Buffer(GVRET_Get_Serial_Buffer(), can_frame, which_bus);
+	if (COMM_Get_Available_Bytes(GVRET_Get_Serial_Buffer()) < COMM_BUFF_SIZE - BUFF_SIZE_THRESHOLD) {
+		// Enough spaze available -> Write directly into GVRET buffer
+		COMM_Send_CAN_Frame_To_Buffer(GVRET_Get_Serial_Buffer(), can_frame, which_bus);
+	} else {
+		// Copy can frame into RX buffer. It will be processed later on
+		Rx_FrameBuffer[Rx_FrameBufferEnd].RxFrame = *can_frame;
+		Rx_FrameBuffer[Rx_FrameBufferEnd].Bus = which_bus;
+		Rx_FrameBufferEnd = (Rx_FrameBufferEnd + 1) % RX_BUFF_SIZE;
+	}
 }
 
 void CAN_SendFrame(CAN_HandleTypeDef* can_handle, CAN_TxFrameTypeDef* frame) {
-	uint32_t tx_mailbox;
-	HAL_CAN_AddTxMessage(can_handle, &frame->Header, frame->Data, &tx_mailbox);
+	/* It's mandatory to look for a free Tx mail box */
+	while(HAL_CAN_GetTxMailboxesFreeLevel(can_handle) == 0); /* Wait till a Tx mailbox is free. Using while loop instead of HAL_Delay() */
+
+	if (HAL_CAN_AddTxMessage(can_handle, &frame->Header, frame->Data, &TxMailbox) != HAL_OK)
+	{
+		/* Transmission request Error */
+		// Error_Handler();
+		return;
+	}
 }
 
-void CAN_Loop() {
-	CAN_RxFrameTypeDef can_frame;
-    uint32_t serial_length = COMM_Get_Available_Bytes(GVRET_Get_Serial_Buffer());
-
-    // Read CAN1
-    if (Settings_CAN_Handles[0] != NULL) {
-    	Settings_CANTypeDef* settings = &Settings_CAN[0];
-    	if (settings && settings->Enabled != 0) {
-    		while (HAL_CAN_GetRxFifoFillLevel(Settings_CAN_Handles[0], CAN_RX_FIFO0) > 0 && serial_length < COMM_BUFF_SIZE - BUFF_SIZE_THRESHOLD) {
-    			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-
-    			if (settings->FdMode == 0) {
-    				// Receive new frame
-    				HAL_CAN_GetRxMessage(Settings_CAN_Handles[0], CAN_RX_FIFO0, &can_frame.Header, can_frame.Data);
-
-					// Send to buffer
-    				CAN_DisplayFrame(&can_frame, 0);
-    			}
-
-    			// Update serial buffer length
-    			serial_length = COMM_Get_Available_Bytes(GVRET_Get_Serial_Buffer());
-
-    			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
-    		}
-    	}
-    }
-
-    // Read CAN2
-    if (Settings_CAN_Handles[1] != NULL) {
-		Settings_CANTypeDef* settings = &Settings_CAN[1];
-		if (settings && settings->Enabled != 0) {
-			while (HAL_CAN_GetRxFifoFillLevel(Settings_CAN_Handles[1], CAN_RX_FIFO1) > 0 && serial_length < COMM_BUFF_SIZE - BUFF_SIZE_THRESHOLD) {
-				HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-
-				if (settings->FdMode == 0) {
-					// Receive new frame
-					HAL_CAN_GetRxMessage(Settings_CAN_Handles[1], CAN_RX_FIFO1, &can_frame.Header, can_frame.Data);
-
-					// Send to buffer
-					CAN_DisplayFrame(&can_frame, 1);
-				}
-
-				// Update serial buffer length
-				serial_length = COMM_Get_Available_Bytes(GVRET_Get_Serial_Buffer());
-
-				HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
-			}
+void CAN_ProcessNextRxBufferBatch() {
+	while (COMM_Get_Available_Bytes(GVRET_Get_Serial_Buffer()) < COMM_BUFF_SIZE - BUFF_SIZE_THRESHOLD) {
+		if (Rx_FrameBufferStart == Rx_FrameBufferEnd) {
+			return;
 		}
+
+		CAN_DisplayFrame(&Rx_FrameBuffer[Rx_FrameBufferStart].RxFrame, Rx_FrameBuffer[Rx_FrameBufferStart].Bus);
+		Rx_FrameBufferStart = (Rx_FrameBufferStart + 1) % RX_BUFF_SIZE;
 	}
 }

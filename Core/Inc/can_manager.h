@@ -10,12 +10,12 @@
 
 #include "can_frame.h"
 
+#define RX_BUFF_SIZE 20
 #define BUFF_SIZE_THRESHOLD 80
 
-void CAN_Setup_Settings();
 void CAN_DisplayFrame(CAN_RxFrameTypeDef* can_frame, uint8_t which_bus);
 void CAN_SendFrame(CAN_HandleTypeDef* can_handle, CAN_TxFrameTypeDef* frame);
-void CAN_Loop();
+void CAN_ProcessNextRxBufferBatch();
 
 
 #endif /* INC_CAN_MANAGER_H_ */
